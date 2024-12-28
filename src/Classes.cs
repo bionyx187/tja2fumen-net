@@ -60,7 +60,7 @@ namespace tja2fumen
         public List<TJAData> notes = new List<TJAData>();
     }
 
-    public struct FumenNote
+    public class FumenNote
     {
         public string noteType;
         public float pos;
@@ -74,7 +74,7 @@ namespace tja2fumen
         public bool multiMeasure;
         public int hits;
         public int hitsPadding;
-        public byte[] drumrollBytes;
+        public byte[] drumrollBytes = new byte[] { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, };
         public bool manuallySet;
     }
 
