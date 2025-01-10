@@ -6,10 +6,10 @@
         {
 
             TJASong asd =
-                Parsers.ParseTja("C:\\taikoReverseEngineering\\tja2fumen\\com.fluto.takotako\\Ready to\\Ready to.tja");
-            FumenCourse course = Converters.ConvertTjaToFumen(asd.courses["Easy"]);
+                Parsers.ParseTja("C:\\Users\\renzo\\Documents\\TakoTako\\customSongs\\TJA\\One Last Kiss\\One Last Kiss.tja");
+            FumenCourse course = Converters.ConvertTjaToFumen(asd.courses["Oni"]);
             var bytes = Writer.getFumenBytes(course);
-            File.WriteAllBytes("E:\\Programacion\\Python\\tja2fumen\\readyto-cs.bin", bytes);
+            File.WriteAllBytes("C:\\Users\\renzo\\Documents\\TakoTako\\customSongs\\TJA\\One Last Kiss\\OLK_cs.bin", bytes);
         }
     }
 }

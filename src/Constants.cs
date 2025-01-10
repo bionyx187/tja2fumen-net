@@ -1,6 +1,6 @@
 ﻿namespace tja2fumen
 {
-    static class Constants
+    public static class Constants
     {
         public static readonly string[] BRANCH_NAMES = { "normal", "professional", "master" };
 
@@ -42,6 +42,11 @@
 
         public static readonly Dictionary<string, string> COURSE_IDS = new Dictionary<string, string> {
             { "Easy", "e" }, { "Normal", "n" }, { "Hard", "h" }, { "Oni", "m" }, { "Ura", "x" }
+        };
+
+
+        public static readonly Dictionary<string, string> COURSE_IDS_REVERSE = new Dictionary<string, string> {
+            { "e", "Easy" }, { "n", "Normal" }, { "h", "Hard" }, { "m", "Oni" }, { "x", "Ura" }
         };
 
         public static readonly Dictionary<string, (double Good, double Ok, double Bad)> TIMING_WINDOWS =

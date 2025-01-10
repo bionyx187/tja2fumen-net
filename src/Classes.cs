@@ -3,6 +3,7 @@ using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
 namespace tja2fumen
@@ -32,6 +33,206 @@ namespace tja2fumen
         public Int32 scoreDiff;
         public List<string> data = new List<string>();
         public Dictionary<string, List<TJAMeasure>> branches;
+
+
+        public bool hasBranches;
+    }
+
+    public class TJASongMetadata
+    {
+        public string title = "";
+        public string titleJA = "";
+        public string titleEN = "";
+        public string titleCN = "";
+        public string titleTW = "";
+        public string titleKO = "";
+
+        public string subtitle = "";
+        public string subtitleJA = "";
+        public string subtitleEN = "";
+        public string subtitleCN = "";
+        public string subtitleTW = "";
+        public string subtitleKO = "";
+
+        public string maker = "";
+
+        public string genre = "";
+
+        public string wave = "";
+
+        public float demoStart;
+
+        public Dictionary<string, string> availableTitles = new Dictionary<string, string>();
+        public Dictionary<string, string> availableSubtitles = new Dictionary<string, string>();
+
+
+        public void SetTitle(string language, string value)
+        {
+            switch (language)
+            {
+                case "TITLE":
+                    title = $"<font=efigs>{value}";
+                    availableTitles[language] = title;
+                    break;
+                case "TITLEJA":
+                    titleJA = $"<font=jp>{value}";
+                    availableTitles[language] = titleJA;
+                    break;
+                case "TITLEEN":
+                    titleEN = $"<font=efigs>{value}";
+                    availableTitles[language] = titleEN;
+                    break;
+                case "TITLECN":
+                    titleCN = $"<font=cn>{value}";
+                    availableTitles[language] = titleCN;
+                    break;
+                case "TITLETW":
+                    titleTW = $"<font=tw>{value}";
+                    availableTitles[language] = titleTW;
+                    break;
+                case "TITLEKO":
+                    titleKO = $"<font=ko>{value}";
+                    availableTitles[language] = titleKO;
+                    break;
+            }
+            availableTitles[language] = value;
+        }
+
+
+        public void SetSubtitle(string language, string value)
+        {
+            var japaneseChars = Regex.Match(value, @"/[一-龠]+|[ぁ-ゔ]+|[ァ-ヴー]+|[ａ-ｚＡ-Ｚ０-９]+|[々〆〤ヶ]+/u");
+            var koreanChars = Regex.Match(value, @"/[\u3131-\uD79D]/ugi");
+            var chineaseChars = Regex.Match(value, @"/[\u4E00-\u9FFF]");
+            string defaultFont;
+            if (japaneseChars.Success)
+            {
+                defaultFont = "jp";
+            }
+            else if (koreanChars.Success) 
+            {
+                defaultFont = "ko";
+            }
+            else if (chineaseChars.Success)
+            {
+                defaultFont = "cn";
+            }
+            else
+            {
+                defaultFont = "efigs";
+            }
+
+            switch (language)
+            {
+                case "SUBTITLE":
+                    subtitle = $"<font={defaultFont}>{value.TrimStart('-', '+')}";
+                    availableSubtitles[language] = subtitle;
+                    break;
+                case "SUBTITLEJA":
+                    subtitleJA = $"<font=jp>{value.TrimStart('-', '+')}";
+                    availableSubtitles[language] = subtitleJA;
+                    break;
+                case "SUBTITLEEN":
+                    subtitleEN = $"<font=efigs>{value.TrimStart('-', '+')}";
+                    availableSubtitles[language] = subtitleEN;
+                    break;
+                case "SUBTITLECN":
+                    subtitleCN = $"<font=cn>{value.TrimStart('-', '+')}";
+                    availableSubtitles[language] = subtitleCN;
+                    break;
+                case "SUBTITLETW":
+                    subtitleTW = $"<font=tw>{value.TrimStart('-', '+')}";
+                    availableSubtitles[language] = subtitleTW;
+                    break;
+                case "SUBTITLEKO":
+                    subtitleKO = $"<font=ko>{value.TrimStart('-', '+')}";
+                    availableSubtitles[language] = subtitleKO;
+                    break;
+            }
+        }
+
+
+        public void NormilizeTitle()
+        {
+            string commonTitle = "";
+            foreach (string language in new string[] { "TITLE", "TITLEJA", "TITLEEN", "TITLECN", "TITLETW", "TITLEKO" })
+            {
+                if (this.availableTitles.ContainsKey(language))
+                {
+                    if (!String.IsNullOrWhiteSpace(this.availableTitles[language]))
+                    {
+                        commonTitle = this.availableTitles[language];
+                        break;
+                    }
+                }
+            }
+
+            if (String.IsNullOrEmpty(this.title))
+            {
+                this.title = commonTitle;
+            }
+            if (String.IsNullOrEmpty(this.titleJA))
+            {
+                this.titleJA = commonTitle;
+            }
+            if (String.IsNullOrEmpty(this.titleEN))
+            {
+                this.titleEN = commonTitle;
+            }
+            if (String.IsNullOrEmpty(this.titleCN))
+            {
+                this.titleCN = commonTitle;
+            }
+            if (String.IsNullOrEmpty(this.titleTW))
+            {
+                this.titleTW = commonTitle;
+            }
+            if (String.IsNullOrEmpty(this.titleKO))
+            {
+                this.titleKO = commonTitle;
+            }
+        }
+
+        public void NormilizeSubtitle()
+        {
+            string commonSubtitle = "";
+            foreach (string language in new string[] { "SUBTITLE", "SUBTITLEJA", "SUBTITLEEN", "SUBTITLECN", "SUBTITLETW", "SUBTITLEKO" })
+            {
+                if (this.availableSubtitles.ContainsKey(language))
+                {
+                    if (!String.IsNullOrWhiteSpace(this.availableSubtitles[language]))
+                    {
+                        commonSubtitle = this.availableSubtitles[language];
+                        break;
+                    }
+                }
+            }
+
+            if (String.IsNullOrEmpty(this.subtitle))
+            {
+                this.subtitle = commonSubtitle;
+            }
+            if (String.IsNullOrEmpty(this.subtitleJA))
+            {
+                this.subtitleJA = commonSubtitle;
+            }
+            if (String.IsNullOrEmpty(this.subtitleEN))
+            {
+                this.subtitleEN = commonSubtitle;
+            }
+            if (String.IsNullOrEmpty(this.subtitleCN))
+            {
+                this.subtitleCN = commonSubtitle;
+            }
+            if (String.IsNullOrEmpty(this.subtitleTW))
+            {
+                this.subtitleTW = commonSubtitle;
+            }
+            if (String.IsNullOrEmpty(this.subtitleKO))
+            {
+                this.subtitleKO = commonSubtitle;
+            }
+        }
     }
 
     public class TJASong
@@ -39,6 +240,8 @@ namespace tja2fumen
         public float bpm;
         public float offset;
         public Dictionary<string, TJACourse> courses = new Dictionary<string, TJACourse>();
+        public TJASongMetadata metadata;
+
     }
 
     public class TJAMeasureProcessed
@@ -123,8 +326,16 @@ namespace tja2fumen
 
         public void setFirstMsOffsets(float songOffset)
         {
+
+            int oneMeasure = (int)((60 / this.bpm * 1000) * 4);
+            int tjaOffset = (int)(songOffset * 1000);
+
+            int offset = oneMeasure - tjaOffset;
+
+
             this.offsetStart = songOffset * -1 * 1000;
-            this.offsetStart -= (4 * 60000 / this.bpm);
+
+            //this.offsetStart -= (4 * 60000 / this.bpm);
             this.offsetEnd = this.offsetStart + this.duration;
         }
 

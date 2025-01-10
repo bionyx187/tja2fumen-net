@@ -319,7 +319,7 @@ namespace tja2fumen
 
                         if (noteTja.value == "EndDRB")
                         {
-                            if (currentDrumRoll.noteType != null || currentDrumRoll.noteType != "")
+                            if (String.IsNullOrEmpty(currentDrumRoll.noteType))
                             {
                                 Console.WriteLine("[ Warn ] '8' note encountered without matching " +
                                                   "drumroll/balloon/kusudama note. Ignoring to " +
@@ -336,7 +336,7 @@ namespace tja2fumen
                                 // Alr?
                                 currentDrumRoll.duration += notePos - 0.0f;
                             }
-                            currentDrumRoll.duration = (float)(int)currentDrumRoll.duration;
+                            currentDrumRoll.duration = (float)((int)currentDrumRoll.duration);
                             currentDrumRoll = new FumenNote();
                             continue;
                         }
@@ -687,7 +687,7 @@ namespace tja2fumen
             ReplaceAlternateDonKas(clusteredNotes, eighthNoteDuration);
         }
 
-        private static void FixDkNoteTypesCourse(FumenCourse fumen)
+        public static void FixDkNoteTypesCourse(FumenCourse fumen)
         {
             List<float> measureBpms = new List<float>();
             foreach (var m in fumen.measures)

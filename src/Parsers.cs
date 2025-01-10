@@ -1,6 +1,8 @@
-﻿using System;
+﻿using SimpleHelpers;
+using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Diagnostics.SymbolStore;
 using System.Globalization;
 using System.Linq;
 using System.Text;
@@ -13,21 +15,10 @@ namespace tja2fumen
     {
         public static TJASong ParseTja(string tjaFileName)
         {
-            string tjaText;
+            Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
+            var encoding = FileEncoding.DetectFileEncoding(tjaFileName);
 
-            try
-            {
-                var bytes = Encoding.UTF8.GetString(File.ReadAllBytes(tjaFileName));
-                tjaText = bytes.ToString();
-            }
-            catch (DecoderFallbackException e)
-            {
-                var bytes = Encoding.GetEncoding("shift_jis").GetString(File.ReadAllBytes(tjaFileName));
-                tjaText = bytes.ToString();
-            }
-
-            List<string> tjaLines = tjaText.ReplaceLineEndings()
-                                        .Split(Environment.NewLine)
+            List<string> tjaLines = File.ReadLines(tjaFileName, encoding).ToList()
                                         .Where(line =>
                                                { return line.Trim() != ""; })
                                         .ToList();
@@ -35,11 +26,12 @@ namespace tja2fumen
             foreach (string key in tja.courses.Keys)
             {
 
-                (Dictionary<string, List<TJAMeasure>> branches, Dictionary<string, List<string>> balloonData) =
+                (Dictionary<string, List<TJAMeasure>> branches, Dictionary<string, List<string>> balloonData, bool hasBranches) =
                     ParseTjaCourseData(tja.courses[key].data);
-                var course = tja.courses[key];
+                TJACourse course = tja.courses[key];
                 course.branches = branches;
                 course.balloon = FixBalloonField(course.balloon, balloonData);
+                course.hasBranches = hasBranches;
                 tja.courses[key] = course;
             }
 
@@ -76,6 +68,8 @@ namespace tja2fumen
             }
             TJASong parsedTja = new TJASong { bpm = tjaMetadata["BPM"], offset = tjaMetadata["OFFSET"],
                                               courses = new Dictionary<string, TJACourse>() };
+
+            parsedTja.metadata = ParseMetadata(lines);
 
             Constants.TJA_COURSE_NAMES.ForEach(
                 course =>
@@ -136,10 +130,22 @@ namespace tja2fumen
 
                         if (value != "")
                         {
-                            List<int> balloons = value.Split(",")
+                                List<int> balloons;
+                                try
+                                {
+                                    if (value.EndsWith(','))
+                                    {
+                                        value = value[..^1];
+                                    }
+                            balloons = value.Split(",")
                                                      .Select(v =>
                                                              { return int.Parse(v); })
                                                      .ToList();
+                                }
+                                catch
+                                {
+                                    balloons = new List<int>();
+                                };
                             course.balloon = balloons;
                         }
 
@@ -346,7 +352,65 @@ namespace tja2fumen
             }
         }
 
-        private static (Dictionary<string, List<TJAMeasure>>, Dictionary<string, List<string>>)
+
+        private static TJASongMetadata ParseMetadata(List<string> lines)
+        {
+            TJASongMetadata metadata = new TJASongMetadata();
+
+            foreach (string line in lines)
+            {
+                var matchMetadata = Regex.Match(line, @"^([a-zA-Z0-9]+):(.*)");
+                if (matchMetadata.Success)
+                {
+                    string nameUpper = matchMetadata.Groups[1].Value.ToUpper();
+                    string value = matchMetadata.Groups[2].Value.Trim();
+                    switch (nameUpper)
+                    {
+                        case "TITLE":
+                        case "TITLEJA":
+                        case "TITLEEN":
+                        case "TITLECN":
+                        case "TITLETW":
+                        case "TITLEKO":
+                            metadata.SetTitle(nameUpper, value);
+                            break;
+
+                        case "SUBTITLE":
+                        case "SUBTITLEJA":
+                        case "SUBTITLEEN":
+                        case "SUBTITLECN":
+                        case "SUBTITLETW":
+                        case "SUBTITLEKO":
+                            metadata.SetSubtitle(nameUpper, value);
+                            break;
+
+                        case "MAKER":
+                            metadata.maker = value;
+                            break;
+
+                        case "DEMOSTART":
+                            float.TryParse(value, out metadata.demoStart);
+                            break;
+
+                        case "WAVE":
+                            metadata.wave = value;
+                            break;
+
+                        case "GENRE":
+                            metadata.genre = value;
+                            break;
+
+                    }
+                }
+            }
+
+            metadata.NormilizeTitle();
+            metadata.NormilizeSubtitle();
+
+            return metadata;
+        }
+
+        private static (Dictionary<string, List<TJAMeasure>>, Dictionary<string, List<string>>, bool)
             ParseTjaCourseData(List<string> data)
         {
             Dictionary<string, List<TJAMeasure>> parsedBranches = new Dictionary<string, List<TJAMeasure>>();
@@ -514,6 +578,13 @@ namespace tja2fumen
                         idx_m_branchstart = idx_m;
                         break;
                     }
+
+                    foreach(string branchName in currentBranch == "all" ? Constants.BRANCH_NAMES
+                                                                             : new string[] { currentBranch })
+                    {
+                        CheckBranchLength(parsedBranches, branchName, idx_m + 1);
+                        parsedBranches[branchName][idx_m].events.Add(new TJAData { name = name, value = value, pos = pos });
+                    }
                 }
                 else
                 {
@@ -642,7 +713,7 @@ namespace tja2fumen
                 }
             }
 
-            return (parsedBranches, balloons);
+            return (parsedBranches, balloons, hasBranches);
         }
     }
 }
