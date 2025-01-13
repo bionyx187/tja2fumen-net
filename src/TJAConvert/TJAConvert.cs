@@ -153,23 +153,27 @@ namespace tja2fumen
 
             TimeSpan delay = TimeSpan.Zero;
             TimeSpan skip = TimeSpan.Zero;
+            TimeSpan take = TimeSpan.Zero;
 
             if (isPreview)
             {
                 skip = TimeSpan.FromMilliseconds(milisecondsOffset);
+                take = TimeSpan.FromMilliseconds(15000);
             }
             else
             {
                 delay = TimeSpan.FromMilliseconds(milisecondsOffset);
             }
-
-            if (milisecondsOffset > 0)
+            
+            if (milisecondsOffset > 0 || isPreview)
             {
                 var trimmed = new OffsetSampleProvider(wavProvider.ToSampleProvider())
                 {
                     DelayBy = delay,
-                    SkipOver = skip
+                    SkipOver = skip,
+                    Take = take
                 };
+                
                 WaveFileWriter.WriteWavFileToStream(memoryStream, trimmed.ToWaveProvider16());
             }
             else
@@ -203,9 +207,7 @@ namespace tja2fumen
 
         private static byte[] WavToHca(string path, bool isPreview = false, int milisecondsOffset = 0)
         {
-            var wavReader = new WaveReader();
-            var hcaWriter = new HcaWriter();
-
+            
             WaveFileReader reader = new WaveFileReader(path);
             var wavProvider = new SampleToWaveProvider16(reader.ToSampleProvider());
             return ConvertToHca(wavProvider, isPreview, milisecondsOffset);
@@ -235,8 +237,8 @@ namespace tja2fumen
             {
                 using FileStream fileIn = new FileStream(inPath, FileMode.Open);
                 var mp3 = new Mp3FileReader(fileIn);
-
-
+                
+                
                 var wavProvider = new SampleToWaveProvider16(mp3.ToSampleProvider());
                 return ConvertToHca(wavProvider, isPreview, milisecondsOffset);
             }
