@@ -173,7 +173,9 @@ namespace tja2fumen
                             break;
 
                         default:
+#if DEBUG
                             Console.WriteLine($"[ Warn ] Unexpected event type: {data.name}");
+#endif
                             break;
                         }
                     }

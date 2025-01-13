@@ -200,8 +200,10 @@ namespace tja2fumen
                     }
                     else
                     {
+#if DEBUG
                         Console.WriteLine("Data encountered before first COURSE: " +
                                           $"'{line}' (Check for typos in TJA)");
+#endif
                     }
                 }
             }
@@ -611,7 +613,9 @@ namespace tja2fumen
                         currentBranch = "all";
                         break;
                     default:
+#if DEBUG
                         Console.WriteLine($"Ignoring unsopported command '{command}'");
+#endif
                         break;
                     }
                 }
