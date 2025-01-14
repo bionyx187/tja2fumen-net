@@ -68,10 +68,31 @@ namespace tja2fumen
 
         public void SetTitle(string language, string value)
         {
+            var japaneseChars = Regex.Match(value, @"/[一-龠]+|[ぁ-ゔ]+|[ァ-ヴー]+|[ａ-ｚＡ-Ｚ０-９]+|[々〆〤ヶ]+/u");
+            var koreanChars = Regex.Match(value, @"/[\u3131-\uD79D]/ugi");
+            var chineaseChars = Regex.Match(value, @"/[\u4E00-\u9FFF]");
+            string defaultFont;
+            if (japaneseChars.Success)
+            {
+                defaultFont = "jp";
+            }
+            else if (koreanChars.Success)
+            {
+                defaultFont = "ko";
+            }
+            else if (chineaseChars.Success)
+            {
+                defaultFont = "cn";
+            }
+            else
+            {
+                defaultFont = "efigs";
+            }
+
             switch (language)
             {
                 case "TITLE":
-                    title = $"<font=efigs>{value}";
+                    title = $"<font={defaultFont}>{value}";
                     availableTitles[language] = title;
                     break;
                 case "TITLEJA":
@@ -95,7 +116,6 @@ namespace tja2fumen
                     availableTitles[language] = titleKO;
                     break;
             }
-            availableTitles[language] = value;
         }
 
 
