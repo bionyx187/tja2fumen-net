@@ -98,7 +98,7 @@ namespace tja2fumen
                             break;
                         case "measure":
                             var matchMeasure = Regex.Match(data.value, @"(\d+)/(\d+)");
-                            if (matchMeasure.Success)
+                            if (!matchMeasure.Success)
                             {
                                 continue;
                             }
@@ -121,7 +121,7 @@ namespace tja2fumen
                                 break;
                             case "scroll":
                                 currentScroll = float.Parse(data.value, CultureInfo.InvariantCulture);
-                                newVal = currentBpm;
+                                newVal = currentScroll;
                                 break;
                             case "gogo":
                                 currentGoGo = int.Parse(data.value, CultureInfo.InvariantCulture) != 0;

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.Linq;
@@ -335,11 +335,11 @@ namespace tja2fumen
             }
         }
 
-        public void SetDuration(List<int> timeSig, int measureLength, int subDivisions)
+        public void SetDuration(List<int> timeSig, float measureLength, float subDivisions)
         {
-            float fullDuration = 4 * 60000 / this.bpm;
+            float fullDuration = 4.0f * 60000.0f / this.bpm;
 
-            float measureSize = timeSig[0] / timeSig[1];
+            float measureSize = ((float)timeSig[0]) / ((float)timeSig[1]);
             float measureRatio = subDivisions == 0.0f ? 1.0f : measureLength / subDivisions;
             this.duration = fullDuration * measureSize * measureRatio;
         }
@@ -365,9 +365,9 @@ namespace tja2fumen
 
             this.offsetStart += delay;
 
-            this.offsetStart += (4 * 60000 / prevMeasure.bpm);
+            this.offsetStart += (4.0f * 60000.0f / prevMeasure.bpm);
 
-            this.offsetStart -= (4 * 60000 / this.bpm);
+            this.offsetStart -= (4.0f * 60000.0f / this.bpm);
 
             this.offsetEnd = this.offsetStart + this.duration;
         }
