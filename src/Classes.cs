@@ -317,7 +317,7 @@ namespace tja2fumen
         public float duration;
         public bool gogo = false;
         public bool barline = true;
-        public List<int> branchInfo = new List<int>();
+        public int[] branchInfo = new int[6];
         public Dictionary<string, FumenBranch> branches = new Dictionary<string, FumenBranch>();
         public int padding1;
         public int padding2;
@@ -331,7 +331,7 @@ namespace tja2fumen
 
             for (int i = 0; i < 6; i++)
             {
-                branchInfo.Add(-1);
+                branchInfo[i] = -1;
             }
         }
 
@@ -396,18 +396,29 @@ namespace tja2fumen
             else if (branchType == "p")
             {
                 List<int> vals = new List<int>();
-
-                if (0 < branchCond.Item1 && branchCond.Item1 <= 1)
+                for(int i = 0; i < 2; i++)
                 {
-                    vals.Add((int)(branchPointsTotal * branchCond.Item1));
-                }
-                else if (branchCond.Item1 > 1)
-                {
-                    vals.Add(999);
-                }
-                else
-                {
-                    vals.Add(0);
+                    float percent;
+                    if(i == 0)
+                    {
+                        percent = branchCond.Item1;
+                    }
+                    else
+                    {
+                        percent = branchCond.Item2;
+                    }
+                    if (0 < percent && percent <= 1)
+                    {
+                        vals.Add((int)(branchPointsTotal * percent));
+                    }
+                    else if (percent > 1)
+                    {
+                        vals.Add(999);
+                    }
+                    else
+                    {
+                        vals.Add(0);
+                    }
                 }
 
                 switch (currentBranch)
