@@ -212,7 +212,7 @@ namespace tja2fumen
             return tjaBranchesProcessed;
         }
 
-        public static FumenCourse ConvertTjaToFumen(TJACourse tja)
+        public static FumenCourse ConvertTjaToFumen(TJACourse tja, bool convertSilently = false)
         {
             var tjaBranchesProcessed = ProcessComands(tja.branches, tja.bpm);
 
@@ -241,6 +241,9 @@ namespace tja2fumen
             var courseBallons = new List<int>(tja.balloon);
 
             var totalNotes = new Dictionary<string, int> { { "normal", 0 }, { "professional", 0 }, { "master", 0 } };
+            var totalBallonsHits = new Dictionary<string, int> { { "normal", 0 }, { "professional", 0 }, { "master", 0 } };
+
+            var totalDrumrollsDuration = new Dictionary<string, float> { { "normal", 0 }, { "professional", 0 }, { "master", 0 } };
             List<string>? branchTypes = null;
             List<(float, float)>? branchConditions = null;
             foreach (var pair in tjaBranchesProcessed)
@@ -313,8 +316,11 @@ namespace tja2fumen
                     }
 
                     branchPointsMeasure = 0;
-                    foreach (var noteTja in measureTja.notes)
+                    for (int i = 0; i < measureTja.notes.Count; i++)
                     {
+                        var noteTja = measureTja.notes[i];
+                        
+
                         float posRatio = ((float)(noteTja.pos - measureTja.posStart) /
                                           (float)(measureTja.posEnd - measureTja.posStart));
                         var notePos = measureFumen.duration * posRatio;
@@ -323,9 +329,12 @@ namespace tja2fumen
                         {
                             if (String.IsNullOrEmpty(currentDrumRoll.noteType))
                             {
-                                Console.WriteLine("[ Warn ] '8' note encountered without matching " +
-                                                  "drumroll/balloon/kusudama note. Ignoring to " +
-                                                  "avoid crash. Check TJA and re-run.");
+                                if (!convertSilently)
+                                {
+                                    Console.WriteLine("[ Warn ] '8' note encountered without matching " +
+                                                      "drumroll/balloon/kusudama note. Ignoring to " +
+                                                      "avoid crash. Check TJA and re-run.");
+                                }
                                 continue;
                             }
 
@@ -338,6 +347,7 @@ namespace tja2fumen
                                 // Alr?
                                 currentDrumRoll.duration += notePos - 0.0f;
                             }
+                            totalDrumrollsDuration[currentBranch] += currentDrumRoll.duration;
                             currentDrumRoll.duration = (float)((int)currentDrumRoll.duration);
                             currentDrumRoll = new FumenNote();
                             continue;
@@ -376,15 +386,20 @@ namespace tja2fumen
                             try
                             {
                                 note.hits = courseBallons[0];
+                                totalBallonsHits[currentBranch] += note.hits;
                                 courseBallons.RemoveAt(0);
                             }
                             catch (Exception e)
                             {
-                                Console.WriteLine($"[ Warn ]Not enough values for 'BALLOON:' " +
-                                                  $"({tja.balloon}). Using value=1 to " +
-                                                  $"avoid crashing. Check TJA and re-run.");
+                                if (!convertSilently)
+                                {
+                                    Console.WriteLine($"[ Warn ]Not enough values for 'BALLOON:' " +
+                                                      $"({tja.balloon}). Using value=1 to " +
+                                                      $"avoid crashing. Check TJA and re-run.");
+                                }
                                 note.hits = 1;
-                            }
+                                totalBallonsHits[currentBranch] += 1;
+                                }
                             currentDrumRoll = note;
                             break;
                         default:
@@ -509,6 +524,9 @@ namespace tja2fumen
                 fumen.header.b464_b467_normal_master_ratio =
                     (int)(65536 * (totalNotes["normal"] / totalNotes["master"]));
             }
+            var totalScore = (1000000.0 - (totalBallonsHits.Values.Max() * 100) -
+                totalDrumrollsDuration.Values.Max() * 1.6920079999994086) / totalNotes.Values.Max();
+            fumen.shinuchiScore = (int)(Math.Ceiling(totalScore / 10) * 10);
 
             return fumen;
         }
