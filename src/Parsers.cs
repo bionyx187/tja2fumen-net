@@ -117,12 +117,12 @@ namespace tja2fumen
 
                     case "SCOREINIT":
                         course = parsedTja.courses[currentCourse];
-                        course.scoreInit = value != "" ? int.Parse(value.Split(",").Last()) : 0;
+                        course.scoreInit = value != "" ? int.Parse(value.Split(",").Last()) : 300;
                         parsedTja.courses[currentCourse] = course;
                         break;
                     case "SCOREDIFF":
                         course = parsedTja.courses[currentCourse];
-                        course.scoreDiff = value != "" ? int.Parse(value.Split(",").Last()) : 0;
+                        course.scoreDiff = value != "" ? int.Parse(value.Split(",").Last()) : 120;
                         parsedTja.courses[currentCourse] = course;
                         break;
                     case "BALLOON":
