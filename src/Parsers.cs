@@ -181,7 +181,6 @@ namespace tja2fumen
                                             scoreInit = baseCourse.scoreInit,
                                             scoreDiff = baseCourse.scoreDiff,
                                             data = new List<string>(baseCourse.data.ToArray()),
-                                            branches = new Dictionary<string, List<TJAMeasure>>(baseCourse.branches)
 
                             };
                         parsedTja.courses[currentCourse].data.Clear();
@@ -212,10 +211,10 @@ namespace tja2fumen
             {
                 var courseSinglePlayer = parsedTja.courses[courseName];
                 var coursePlayerOne = parsedTja.courses[courseName + "P1"];
-                if (coursePlayerOne.data.Count > 0 && courseSinglePlayer.data.Count > 0)
+                if (coursePlayerOne.data.Count > 0 && courseSinglePlayer.data.Count == 0)
                 {
                     var baseCourse = coursePlayerOne;
-                    parsedTja.courses[currentCourse] =
+                    parsedTja.courses[courseName] =
                         new TJACourse { bpm = baseCourse.bpm,
                                         offset = baseCourse.offset,
                                         course = baseCourse.course,
@@ -224,7 +223,6 @@ namespace tja2fumen
                                         scoreInit = baseCourse.scoreInit,
                                         scoreDiff = baseCourse.scoreDiff,
                                         data = new List<string>(baseCourse.data.ToArray()),
-                                        branches = new Dictionary<string, List<TJAMeasure>>(baseCourse.branches)
 
                         };
                 }
