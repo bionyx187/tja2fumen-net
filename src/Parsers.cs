@@ -1,4 +1,4 @@
-﻿using SimpleHelpers;
+using SimpleHelpers;
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
@@ -78,7 +78,7 @@ namespace tja2fumen
                         new TJACourse { bpm = tjaMetadata["BPM"], offset = tjaMetadata["OFFSET"], course = course };
                 });
 
-            string currentCourse = "";
+            string currentCourse = "Oni";
             string currentCourseBasename = "";
             foreach (string line in lines)
             {
