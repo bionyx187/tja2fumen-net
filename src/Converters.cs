@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
@@ -629,7 +629,7 @@ namespace tja2fumen
                     {
                         var note = cluster.Last();
                         note.noteType = note.noteType.Substring(0, note.noteType.Count() - 1);
-                        cluster[cluster.Count] = note;
+                        cluster[cluster.Count - 1] = note;
                     }
                 }
             }
@@ -637,7 +637,6 @@ namespace tja2fumen
 
         private static void FixDkNoteTypes(List<FumenNote> dkNotes, float songBpm)
         {
-            dkNotes = new List<FumenNote>();
             dkNotes.Sort((note1, note2) => note1.posAbs.CompareTo(note2.posAbs));
 
             for (int i = 0; i < dkNotes.Count - 1; i++)
@@ -650,7 +649,10 @@ namespace tja2fumen
             List<int> diffsUnique = new List<int>();
             foreach (var note in dkNotes)
             {
-                diffsUnique.Add(note.diff);
+                if (!diffsUnique.Contains(note.diff))
+                {
+                    diffsUnique.Add(note.diff);
+                }
             }
             diffsUnique.Sort();
 
