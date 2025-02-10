@@ -29,8 +29,9 @@ namespace tja2fumen
         public string course;
         public Int32 level;
         public List<Int32> balloon = new List<Int32>();
-        public Int32 scoreInit;
-        public Int32 scoreDiff;
+        // Set defaults for SCOREINIT and SCOREDIFF to handle TJAs that leave them out entirely
+        public Int32 scoreInit = 300;
+        public Int32 scoreDiff = 120;
         public List<string> data = new List<string>();
         public Dictionary<string, List<TJAMeasure>> branches;
 
