@@ -79,11 +79,14 @@ namespace tja2fumen
                 });
 
             string currentCourse = "Oni";
-            string currentCourseBasename = "";
+            string currentCourseBasename = "Oni";
+            bool readingNotes = false;
+
             foreach (string line in lines)
             {
                 var matchMetadata = Regex.Match(line, @"^([a-zA-Z0-9]+):(.*)");
                 var matchStart = Regex.Match(line, @"^#START(?:\s+(.+))?");
+                var matchEnd = Regex.Match(line, @"^#END(?:\s+(.+))?");
 
                 if (matchMetadata.Success)
                 {
@@ -161,7 +164,7 @@ namespace tja2fumen
                 }
                 else if (matchStart.Success)
                 {
-
+                    readingNotes = true;
                     string value = matchStart.Groups[1].Value != "" ? matchStart.Groups[1].Value : "";
                     if (new string[] { "1P", "2P" }.Contains(value))
                     {
@@ -191,9 +194,13 @@ namespace tja2fumen
                     }
                     parsedTja.courses[currentCourse].data.Add("#START");
                 }
+                else if (matchEnd.Success)
+                {
+                    readingNotes = false;
+                }
                 else
                 {
-                    if (currentCourse != "")
+                    if (currentCourse != "" && readingNotes)
                     {
                         parsedTja.courses[currentCourse].data.Add(line);
                     }
