@@ -604,7 +604,7 @@ namespace tja2fumen
                     cluster[i] = note;
                 }
 
-                bool allDons = cluster.Any(note =>
+                bool allDons = cluster.All(note =>
                                            { return note.noteType.StartsWith("Don"); });
 
                 for (int i = 0; i < cluster.Count; i++)
@@ -618,9 +618,7 @@ namespace tja2fumen
                     cluster[i] = note;
                 }
 
-                bool isFastClusterOf4 = (cluster.Count == 4 && cluster.Chunk(cluster.Count - 1)
-                                                                   .First()
-                                                                   .All(note =>
+                bool isFastClusterOf4 = (cluster.Count == 4 && cluster.All(note =>
                                                                         { return note.diff < eighthNoteDuration; }));
 
                 if (!isFastClusterOf4)
