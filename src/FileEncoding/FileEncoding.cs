@@ -336,8 +336,17 @@ namespace SimpleHelpers
                     .Select(i => i.Key).FirstOrDefault();
             }
             if (!String.IsNullOrEmpty(EncodingName))
+            {
+                // Per https://stackoverflow.com/questions/19919439/c-convert-japanese-text-encoding-in-shift-jis-and-stored-as-ascii-into-utf-8
+                // Windows will guess encoding page 1252 which should really map to page 932
+                // Since TJAs can only be Shift-JIS or UTF-8, if it's not UTF-8 already,
+                // forcing Shift-JIS can only help.
+                if (EncodingName == "windows-1252") {
+                    return Encoding.GetEncoding(932);
+                }
                 return Encoding.GetEncoding(EncodingName);
-            return null;
+            }
+            return Encoding.Default;
         }
     }
 }
