@@ -17,11 +17,20 @@ using VGAudio.Formats.Pcm16;
 using VGAudio.Containers.Adx;
 using VGAudio.Codecs.CriHca;
 using VGAudio.Formats.CriHca;
+using NAudio.Utils;
 
 namespace tja2fumen
 {
+    public class WavData
+    {
+        public byte[] Data;
+        public int MsDuration;
+    }
+
     public class TJAConvert
     {
+
+
         public const int PaddedSongTime = 2 * 1000; // in ms
         public const float TjaOffsetForPaddingSong = -1.0f; // in ms
 
@@ -45,12 +54,8 @@ namespace tja2fumen
 
             CriTable acbFile = new CriTable();
             acbFile.Load(acbPath, bufferSize);
-
             CriAfs2Archive afs2Archive = new CriAfs2Archive();
 
-            CriCpkArchive cpkArchive = new CriCpkArchive();
-            CriCpkArchive extCpkArchive = new CriCpkArchive();
-            cpkArchive.Mode = extCpkArchive.Mode = CriCpkMode.Id;
 
             using (CriTableReader reader = CriTableReader.Create((byte[])acbFile.Rows[0]["WaveformTable"]))
             {
@@ -75,15 +80,20 @@ namespace tja2fumen
                     afs2Archive.Add(entry);
                 }
             }
-            
+
             acbFile.Rows[0]["AwbFile"] = null;
             acbFile.Rows[0]["StreamAwbAfs2Header"] = null;
+
+
+            CriCpkArchive cpkArchive = new CriCpkArchive();
+            CriCpkArchive extCpkArchive = new CriCpkArchive();
+            cpkArchive.Mode = extCpkArchive.Mode = CriCpkMode.Id;
 
             if (afs2Archive.Count > 0 || cpkArchive.Count > 0)
                 acbFile.Rows[0]["AwbFile"] = afs2Archive.Save();
 
             acbFile.WriterSettings = CriTableWriterSettings.Adx2Settings;
-            
+
             acbFile.Save(acbPath, bufferSize);
         }
 
@@ -99,14 +109,15 @@ namespace tja2fumen
                 }
                 var acbPath = Path.Combine(directory, fileName);
 
-                if (File.Exists(acbPath))
+                var keepAcb = false;
+                if (File.Exists(acbPath)  && keepAcb)
                 {
                     return true;
                 }
                 string hcaPath = $"{directory}/00000.hca";
 
-                File.WriteAllBytes(acbPath, Files.TemplateACBData);
-                byte[]? hca = null;
+                WavData? hca = null;
+
                 switch (fileType)
                 {
                     case FileType.WAV:
@@ -129,15 +140,22 @@ namespace tja2fumen
 
                 }
                 
-                if(hca == null)
+                if(hca == null || hca.Data == null)
                 {
                     return false;
                 }
 
-                File.WriteAllBytes(hcaPath, hca);
+
+                // Bake in the length bytes 
+                // TODO: make a copy?
+                Files.TemplateACBData[1795] = (byte)((hca.MsDuration >> 16) & 0xff);
+                Files.TemplateACBData[1796] = (byte)((hca.MsDuration >> 8)  & 0xff);
+                Files.TemplateACBData[1797] = (byte)(hca.MsDuration & 0xff);
+
+                File.WriteAllBytes(acbPath, Files.TemplateACBData);
+                File.WriteAllBytes(hcaPath, hca.Data);
                 Pack(acbPath, directory);
                 File.Delete(hcaPath);
-                
                 return true;
             }
             catch (Exception e)
@@ -147,7 +165,24 @@ namespace tja2fumen
             }
         }
 
-        private static byte[] ConvertToHca(SampleToWaveProvider16 wavProvider, bool isPreview, int milisecondsOffset = 0)
+        public static int WriteWavFileToStream(Stream outStream, IWaveProvider sourceProvider)
+        {
+            using WaveFileWriter waveFileWriter = new WaveFileWriter(new IgnoreDisposeStream(outStream), sourceProvider.WaveFormat);
+            byte[] array = new byte[sourceProvider.WaveFormat.AverageBytesPerSecond * 4];
+            while (true) {
+                int num = sourceProvider.Read(array, 0, array.Length);
+                if (num == 0) {
+                    break;
+                }
+
+                waveFileWriter.Write(array, 0, num);
+            }
+
+            outStream.Flush();
+            return (int) waveFileWriter.TotalTime.TotalMilliseconds;
+        }
+
+        private static WavData ConvertToHca(SampleToWaveProvider16 wavProvider, bool isPreview, int milisecondsOffset = 0)
         {
             var memoryStream = new MemoryStream();
 
@@ -164,7 +199,8 @@ namespace tja2fumen
             {
                 delay = TimeSpan.FromMilliseconds(milisecondsOffset);
             }
-            
+
+            int msDuration = 0;
             if (milisecondsOffset > 0 || isPreview)
             {
                 var trimmed = new OffsetSampleProvider(wavProvider.ToSampleProvider())
@@ -174,11 +210,11 @@ namespace tja2fumen
                     Take = take
                 };
                 
-                WaveFileWriter.WriteWavFileToStream(memoryStream, trimmed.ToWaveProvider16());
+                msDuration = WriteWavFileToStream(memoryStream, trimmed.ToWaveProvider16());
             }
             else
             {
-                WaveFileWriter.WriteWavFileToStream(memoryStream, wavProvider);
+                msDuration = WriteWavFileToStream(memoryStream, wavProvider);
             }
             var hcaWriter = new HcaWriter();
             hcaWriter.Configuration.EncryptionKey = new CriHcaKey(ns2HcaKey);
@@ -202,10 +238,13 @@ namespace tja2fumen
             HcaEncryption.CriHcaEncryption.Crypt(Hca, hcaFormat.AudioData, hcaWriter.Configuration.EncryptionKey, false);
 
 
-            return hcaWriter.GetFile(audioData, hcaWriter.Configuration);
+            return new WavData {
+                Data = hcaWriter.GetFile(audioData, hcaWriter.Configuration),
+                MsDuration = msDuration
+            };
         }
 
-        private static byte[] WavToHca(string path, bool isPreview = false, int milisecondsOffset = 0)
+        private static WavData? WavToHca(string path, bool isPreview = false, int milisecondsOffset = 0)
         {
             
             WaveFileReader reader = new WaveFileReader(path);
@@ -213,7 +252,7 @@ namespace tja2fumen
             return ConvertToHca(wavProvider, isPreview, milisecondsOffset);
         }
 
-        private static byte[] OggToHca(string inPath, bool isPreview = false, int milisecondsOffset = 0)
+        private static WavData? OggToHca(string inPath, bool isPreview = false, int milisecondsOffset = 0)
         {
             try
             {
@@ -231,7 +270,7 @@ namespace tja2fumen
         }
 
 
-        private static byte[] Mp3ToHca(string inPath, bool isPreview = false, int milisecondsOffset = 0)
+        private static WavData? Mp3ToHca(string inPath, bool isPreview = false, int milisecondsOffset = 0)
         {
             try
             {
