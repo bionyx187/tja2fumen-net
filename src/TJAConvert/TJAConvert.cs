@@ -18,12 +18,13 @@ using VGAudio.Containers.Adx;
 using VGAudio.Codecs.CriHca;
 using VGAudio.Formats.CriHca;
 using NAudio.Utils;
+using System.Text.RegularExpressions;
 
 namespace tja2fumen
 {
     public class WavData
     {
-        public byte[] Data;
+        public byte[]? Data;
         public int MsDuration;
     }
 
@@ -35,6 +36,8 @@ namespace tja2fumen
         public const float TjaOffsetForPaddingSong = -1.0f; // in ms
 
         public const ulong ns2HcaKey = 52539816150204134;
+        private const int TEKA_TEKA_VERSION_NUMBER = 1;
+        private const string TEKA_TEKA_VERSION_FIELD = "TekaTekaVersion";
 
         public enum FileType
         {
@@ -44,10 +47,84 @@ namespace tja2fumen
             UNK
         }
 
-        private static void Pack(string acbPath, string path)
+        private static byte[] BuildCueTable(int msDuration)
+        {
+            MemoryStream memoryStream = new MemoryStream();
+            CriTableWriter writer = CriTableWriter.Create(memoryStream);
+            writer.WriteStartTable();
+            writer.WriteStartFieldCollection();
+            writer.WriteField("CueId", typeof(int));
+            writer.WriteField("ReferenceType", typeof(byte));
+            writer.WriteField("ReferenceIndex", typeof(UInt16));
+            writer.WriteField("UserData", typeof(string));
+            writer.WriteField("Worksize", typeof(UInt16));
+            writer.WriteField("AisacControlMap", typeof(byte[]));
+            writer.WriteField("Length", typeof(UInt32));
+            writer.WriteField("NumAisacControlMaps", typeof(byte));
+            writer.WriteField("HeaderVisibility", typeof(byte));
+            writer.WriteEndFieldCollection();
+            writer.WriteStartRow();
+            writer.WriteValue("CueId", 0);
+            writer.WriteValue("ReferenceType", (byte)3);
+            writer.WriteValue("ReferenceIndex", 0);
+            writer.WriteValue("UserData", $"{TEKA_TEKA_VERSION_FIELD}:{TEKA_TEKA_VERSION_NUMBER}");
+            writer.WriteValue("AisacControlMap", Array.Empty<byte>());
+            writer.WriteValue("Length", msDuration);
+            writer.WriteValue("NumAisacControlMaps", 0);
+            writer.WriteValue("HeaderVisibility", 1);
+            writer.WriteEndRow();
+            writer.WriteEndTable();
+            return memoryStream.GetBuffer();
+        }
+
+        private static byte[] BuildCueNameTable(string modName)
+        {
+            MemoryStream memoryStream = new MemoryStream();
+            CriTableWriter writer = CriTableWriter.Create(memoryStream);
+            writer.WriteStartTable();
+            writer.WriteStartFieldCollection();
+            writer.WriteField("CueName", typeof(string));
+            writer.WriteField("CueIndex", typeof(int));
+            writer.WriteEndFieldCollection();
+            writer.WriteStartRow();
+            writer.WriteValue("CueName", modName);
+            writer.WriteValue("CueIndex", 0);
+            writer.WriteEndRow();
+            writer.WriteEndTable();
+            return memoryStream.GetBuffer();
+        }
+
+        private static bool AcbUpdateRequired(string acbPath)
+        {
+            if (!File.Exists(acbPath)) {
+                return true;
+            }
+
+            const int bufferSize = 4096;
+            CriTable acbFile = new CriTable();
+            acbFile.Load(acbPath, bufferSize);
+            byte[] cueBytes = acbFile.Rows[0].GetValue<byte[]>("CueTable");
+            if (cueBytes == null) {
+                return true;
+            }
+
+            Regex r = new Regex(@$"^{TEKA_TEKA_VERSION_FIELD}:(?<version>\d+)$", RegexOptions.None, TimeSpan.FromMilliseconds(150));
+            using (CriTableReader reader = CriTableReader.Create(cueBytes))
+            {
+                reader.Read();
+                Match m = r.Match(reader.GetValue<string>("UserData"));
+                int version = 0;
+                if (m.Success) {
+                    var versionString = m.Result("${version}");
+                    version = Int32.Parse(versionString);
+                }
+                return version < TEKA_TEKA_VERSION_NUMBER;
+            }
+        }
+
+        private static void Pack(string acbPath, string songId, string path, int msDuration)
         {
             const int bufferSize = 4096;
-            
 
             if (!File.Exists(acbPath))
                 throw new FileNotFoundException("Unable to locate the corresponding ACB file. Please ensure that it's in the same directory.");
@@ -55,7 +132,6 @@ namespace tja2fumen
             CriTable acbFile = new CriTable();
             acbFile.Load(acbPath, bufferSize);
             CriAfs2Archive afs2Archive = new CriAfs2Archive();
-
 
             using (CriTableReader reader = CriTableReader.Create((byte[])acbFile.Rows[0]["WaveformTable"]))
             {
@@ -83,7 +159,8 @@ namespace tja2fumen
 
             acbFile.Rows[0]["AwbFile"] = null;
             acbFile.Rows[0]["StreamAwbAfs2Header"] = null;
-
+            acbFile.Rows[0]["CueNameTable"] = BuildCueNameTable(songId);
+            acbFile.Rows[0]["CueTable"] = BuildCueTable(msDuration);
 
             CriCpkArchive cpkArchive = new CriCpkArchive();
             CriCpkArchive extCpkArchive = new CriCpkArchive();
@@ -93,11 +170,10 @@ namespace tja2fumen
                 acbFile.Rows[0]["AwbFile"] = afs2Archive.Save();
 
             acbFile.WriterSettings = CriTableWriterSettings.Adx2Settings;
-
             acbFile.Save(acbPath, bufferSize);
         }
 
-        public static bool ConvertToAcb(string filePath, FileType fileType, bool isPreview = false, int milisecondsOffset = 0)
+        public static bool ConvertToAcb(string filePath, string songId, FileType fileType, bool isPreview = false, int milisecondsOffset = 0)
         {
             try
             {
@@ -109,8 +185,9 @@ namespace tja2fumen
                 }
                 var acbPath = Path.Combine(directory, fileName);
 
-                var keepAcb = false;
-                if (File.Exists(acbPath)  && keepAcb)
+                var keepAcb = true;
+                var updateRequired = AcbUpdateRequired(acbPath);
+                if (!updateRequired  && keepAcb)
                 {
                     return true;
                 }
@@ -136,8 +213,6 @@ namespace tja2fumen
                     default:
                         hca = null;
                         break;
-
-
                 }
                 
                 if(hca == null || hca.Data == null)
@@ -145,16 +220,9 @@ namespace tja2fumen
                     return false;
                 }
 
-
-                // Bake in the length bytes 
-                // TODO: make a copy?
-                Files.TemplateACBData[1795] = (byte)((hca.MsDuration >> 16) & 0xff);
-                Files.TemplateACBData[1796] = (byte)((hca.MsDuration >> 8)  & 0xff);
-                Files.TemplateACBData[1797] = (byte)(hca.MsDuration & 0xff);
-
                 File.WriteAllBytes(acbPath, Files.TemplateACBData);
                 File.WriteAllBytes(hcaPath, hca.Data);
-                Pack(acbPath, directory);
+                Pack(acbPath, songId, directory, hca.MsDuration);
                 File.Delete(hcaPath);
                 return true;
             }
