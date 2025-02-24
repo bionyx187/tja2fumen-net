@@ -205,7 +205,7 @@ namespace tja2fumen
             return hcaWriter.GetFile(audioData, hcaWriter.Configuration);
         }
 
-        private static byte[] WavToHca(string path, bool isPreview = false, int milisecondsOffset = 0)
+        private static byte[]? WavToHca(string path, bool isPreview = false, int milisecondsOffset = 0)
         {
             
             WaveFileReader reader = new WaveFileReader(path);
@@ -213,7 +213,7 @@ namespace tja2fumen
             return ConvertToHca(wavProvider, isPreview, milisecondsOffset);
         }
 
-        private static byte[] OggToHca(string inPath, bool isPreview = false, int milisecondsOffset = 0)
+        private static byte[]? OggToHca(string inPath, bool isPreview = false, int milisecondsOffset = 0)
         {
             try
             {
@@ -231,7 +231,7 @@ namespace tja2fumen
         }
 
 
-        private static byte[] Mp3ToHca(string inPath, bool isPreview = false, int milisecondsOffset = 0)
+        private static byte[]? Mp3ToHca(string inPath, bool isPreview = false, int milisecondsOffset = 0)
         {
             try
             {
