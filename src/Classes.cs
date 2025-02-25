@@ -694,8 +694,9 @@ namespace tja2fumen
         public List<FumenMeasure> measures = new List<FumenMeasure>();
         public int scoreInit = 0;
         public int scoreDiff = 0;
+        public bool hasBranches;
 
-
+        public string diff = "";
         public int shinuchiScore = 0;
     }
 
