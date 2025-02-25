@@ -26,14 +26,14 @@ namespace tja2fumen
     {
         public float bpm;
         public float offset;
-        public string course;
+        public string course = "";
         public Int32 level;
-        public List<Int32> balloon = new List<Int32>();
+        public List<Int32> balloon = new ();
         // Set defaults for SCOREINIT and SCOREDIFF to handle TJAs that leave them out entirely
         public Int32 scoreInit = 300;
         public Int32 scoreDiff = 120;
-        public List<string> data = new List<string>();
-        public Dictionary<string, List<TJAMeasure>> branches;
+        public List<string> data = new ();
+        public Dictionary<string, List<TJAMeasure>> branches = new();
 
 
         public bool hasBranches;
@@ -260,8 +260,8 @@ namespace tja2fumen
     {
         public float bpm;
         public float offset;
-        public Dictionary<string, TJACourse> courses = new Dictionary<string, TJACourse>();
-        public TJASongMetadata metadata;
+        public Dictionary<string, TJACourse> courses = new ();
+        public TJASongMetadata metadata = new();
 
     }
 
@@ -271,22 +271,22 @@ namespace tja2fumen
         public float scroll;
         public bool gogo;
         public bool barline;
-        public List<Int32> timeSignature = new List<int>();
+        public List<Int32> timeSignature = new();
         public Int32 subDivisions;
         public Int32 posStart;
         public Int32 posEnd;
         public float delay;
         public bool section;
         public bool levelHold;
-        public string seNote;
-        public string branchType;
+        public string seNote = "";
+        public string branchType  = "";
         public (float, float) branchCond;
-        public List<TJAData> notes = new List<TJAData>();
+        public List<TJAData> notes = new ();
     }
 
     public class FumenNote
     {
-        public string noteType;
+        public string noteType = "";
         public float pos;
         public float posAbs;
         public int diff;

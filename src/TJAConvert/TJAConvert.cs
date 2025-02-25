@@ -1,4 +1,4 @@
-﻿using NAudio.Vorbis;
+using NAudio.Vorbis;
 using NAudio.Wave.SampleProviders;
 using NAudio.Wave;
 using SimpleHelpers;

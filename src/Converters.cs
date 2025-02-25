@@ -389,7 +389,7 @@ namespace tja2fumen
                                 totalBallonsHits[currentBranch] += note.hits;
                                 courseBallons.RemoveAt(0);
                             }
-                            catch (Exception e)
+                            catch (Exception)
                             {
                                 if (!convertSilently)
                                 {

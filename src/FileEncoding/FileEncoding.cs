@@ -30,6 +30,7 @@
  */
 #endregion
 
+#pragma warning disable CS8601,CS8625,CS8603,CS8618
 using System;
 using System.IO;
 using System.Collections.Generic;
@@ -48,11 +49,11 @@ namespace SimpleHelpers
         /// <param name="inputFilename">The input filename.</param>
         /// <param name="defaultIfNotDetected">The default encoding if none was detected.</param>
         /// <returns></returns>
-        public static Encoding DetectFileEncoding(string inputFilename, Encoding defaultIfNotDetected = null)
+        public static Encoding DetectFileEncoding(string inputFilename)
         {
             using (var stream = new System.IO.FileStream(inputFilename, System.IO.FileMode.Open, System.IO.FileAccess.Read, System.IO.FileShare.ReadWrite | System.IO.FileShare.Delete, DEFAULT_BUFFER_SIZE))
             {
-                return DetectFileEncoding(stream) ?? defaultIfNotDetected;
+                return DetectFileEncoding(stream);
             }
         }
 
@@ -62,11 +63,11 @@ namespace SimpleHelpers
         /// <param name="inputStream">The input stream.</param>
         /// <param name="defaultIfNotDetected">The default encoding if none was detected.</param>
         /// <returns></returns>
-        public static Encoding DetectFileEncoding(Stream inputStream, Encoding defaultIfNotDetected = null)
+        public static Encoding DetectFileEncoding(Stream inputStream)
         {
             var det = new FileEncoding();
             det.Detect(inputStream);
-            return det.Complete() ?? defaultIfNotDetected;
+            return det.Complete();
         }
 
         /// <summary>
@@ -77,11 +78,11 @@ namespace SimpleHelpers
         /// <param name="count">The count.</param>
         /// <param name="defaultIfNotDetected">The default encoding if none was detected.</param>
         /// <returns></returns>
-        public static Encoding DetectFileEncoding(byte[] inputData, int start, int count, Encoding defaultIfNotDetected = null)
+        public static Encoding DetectFileEncoding(byte[] inputData, int start, int count)
         {
             var det = new FileEncoding();
             det.Detect(inputData, start, count);
-            return det.Complete() ?? defaultIfNotDetected;
+            return det.Complete();
         }
 
         /// <summary>
