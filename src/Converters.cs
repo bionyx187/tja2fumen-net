@@ -219,7 +219,10 @@ namespace tja2fumen
             var nMeasures = tjaBranchesProcessed["normal"].Count();
 
             FumenCourse fumen = new FumenCourse();
+            fumen.hasBranches = tja.hasBranches;
             fumen.measures = new List<FumenMeasure>();
+            fumen.diff = tja.course;
+            
             for (int i = 0; i < nMeasures; i++)
             {
                 fumen.measures.Add(new FumenMeasure());

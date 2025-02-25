@@ -7,6 +7,7 @@
     NAudio.Core
     NAudio.Vorbis
     NAudio.WinMM
+    NAudio.Wasapi
     NVorbis
     SonicAudioLib
     Ude
